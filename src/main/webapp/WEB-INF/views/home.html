@@ -1,0 +1,156 @@
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+<style>
+.m-progress-bar {
+    min-height: 1em;
+    background: #c12d2d;
+    width: 5%;
+}
+</style>
+</head>
+<body>
+
+<form class="modal multi-step" id="demo-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title step-1" data-step="1">Step 1</h4>
+                <h4 class="modal-title step-2" data-step="2">Step 2</h4>
+                <h4 class="modal-title step-3" data-step="3">Step 3 </h4>
+				<h4 class="modal-title step-4" data-step="4">Step 4</h4>
+                <h4 class="modal-title step-5" data-step="5">Step 5</h4>
+                
+                <div class="m-progress">
+                    <div class="m-progress-bar-wrapper">
+                        <div class="m-progress-bar">
+                        </div>
+                    </div>
+                
+                    <div class="m-progress-complete">
+                        Completed
+                    </div>
+                </div>
+            </div>
+            <div class="modal-body step-1" data-step="1">
+                This is step 1.
+				
+				<div class="form-group">
+    <label for="name">Name</label>
+    <input type="text" class="form-control" name="name" ng-model="formData.name">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+				
+            </div>
+            <div class="modal-body step-2" data-step="2">
+                This is the second step.
+				<div class="form-group">
+    <label for="name">Name</label>
+    <input type="text" class="form-control" name="name" ng-model="formData.name">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+            </div>
+            <div class="modal-body step-3" data-step="3">
+                This is the third  step.
+				<div class="form-group">
+    <label for="name">Name</label>
+    <input type="text" class="form-control" name="name" ng-model="formData.name">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+            </div>
+			<div class="modal-body step-4" data-step="4">
+                This is the fourth step.
+				<div class="form-group">
+    <label for="name">Name</label>
+    <input type="text" class="form-control" name="name" ng-model="formData.name">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+            </div>
+			<div class="modal-body step-5" data-step="5">
+                This is the final step.
+				<div class="form-group">
+    <label for="name">Name</label>
+    <input type="text" class="form-control" name="name" ng-model="formData.name">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+
+<div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" class="form-control" name="email" ng-model="formData.email">
+</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary step step-1" data-step="1" onclick="sendEvent('#demo-modal', 2)">Continue</button>
+                <button type="button" class="btn btn-primary step step-2" data-step="2" onclick="sendEvent('#demo-modal', 1)">Back</button>
+                <button type="button" class="btn btn-primary step step-2" data-step="2" onclick="sendEvent('#demo-modal', 3)">Continue</button>
+				<button type="button" class="btn btn-primary step step-3" data-step="3" onclick="sendEvent('#demo-modal', 2)">Back</button>
+                <button type="button" class="btn btn-primary step step-3" data-step="3" onclick="sendEvent('#demo-modal', 4)">Continue</button>
+				<button type="button" class="btn btn-primary step step-4" data-step="4" onclick="sendEvent('#demo-modal', 3)">Back</button>
+                <button type="button" class="btn btn-primary step step-4" data-step="4" onclick="sendEvent('#demo-modal', 5)">Continue</button>
+				 <button type="button" class="btn btn-primary step step-5" data-step="5" onclick="sendEvent('#demo-modal', 4)">Back</button>
+				<button type="button" class="btn btn-primary step step-5" data-step="5" >submit</button>
+				
+            </div>
+        </div>
+    </div>
+</form>
+<div class="container">
+    
+    <div class="row">
+        <h1>
+            Progress bar with back buttons
+        </h1>
+        <button class="btn btn-default" data-toggle="modal" data-target="#demo-modal">Show</button>
+    </div>
+</div>
+<script src="multi-step-modal.js"></script>
+<script>
+sendEvent = function(sel, step) {
+    $(sel).trigger('next.m.' + step);
+}
+</script>
+</body>
+</html>

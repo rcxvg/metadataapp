@@ -1,0 +1,46 @@
+ declare @jobid int=?
+ 
+  MERGE INTO [dbo].[Meta_Unit_Stage_Check] C
+  USING (select * from [dbo].[Meta_Validation_Template] where job_id=@jobid)V
+  ON C.[Job_Id]=V.[Job_Id]
+  and C.[Column_Order]=V.[Column_Order]
+  and V.[Validation_Type]=(select [Validation_Type]
+   from [dbo].[Ref_Validation] rv
+   where rv.[Validation_Id]=C.[Validation_Id])
+   when matched then update
+   set C.[Source_Column_Name]=V.[Column_Name],
+   C.[Warning_Threshold]=V.[Warning_Threshold],
+   C.[Failure_Threshold]=V.[Failure_Threshold],
+   C.[Validation_Order]=V.[Validation_Order],
+   C.[Validation_Active_Flag]=V.[Validation_Active_Flag],
+   C.[Data_Correction]=V.[Data_Correction],
+   C.[Job_Validation_Id]=V.[Validation_Order],
+   C.[Default_Val]=V.[Default_Val],
+   C.[Job_Validation_Description]=V.[Job_Validation_Description]
+   
+   WHEN NOT MATCHED BY SOURCE AND c.job_id=@jobid THEN DELETE
+   WHEN NOT MATCHED BY TARGET THEN 
+   INSERT
+   ([Job_Id]
+           ,[Unit_Id]
+           ,[Task_Id]
+           ,[Column_Order]
+           ,[Validation_Id]
+           ,[Source_Column_Name]
+           ,[Warning_Threshold]
+           ,[Failure_Threshold]
+           ,[Validation_Order]
+           ,[Validation_Active_Flag]
+           ,[Data_Correction]
+           ,[Job_Validation_Id]
+           ,[Default_Val]
+           ,[Job_Validation_Description]
+           --,[Column_List]
+           ,[Validation_Condition])VALUES
+   ([Job_Id],1,1,[Column_Order],
+   (SELECT [Validation_Id]
+   from [dbo].[Ref_Validation] rv
+   where rv.[Validation_Type]=V.[Validation_Type]),
+   [Column_Name],
+   [Warning_Threshold],[Failure_Threshold],[Validation_Order],[Validation_Active_Flag],
+[Data_Correction],[Validation_Order],[Default_Val],[Job_Validation_Description],[Validation_Condition]);

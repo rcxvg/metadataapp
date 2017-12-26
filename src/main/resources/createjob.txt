@@ -1,0 +1,165 @@
+Declare @htable varchar(50),@otable varchar(50),@FlRcTpKy int,@JobId int,@ColNum int ;
+set  @htable=?
+set  @otable=?
+set @JobId=?;
+select @FlRcTpKy=File_Rec_Type_Key
+FROM Meta_File_Rec_Type
+where lower(Hive_Tbl)=(lower(@htable));
+
+DELEtE FROM  Meta_Client_Job where Job_Id=@JobId;
+DELEtE FROM  Meta_Exception where Job_Id=@JobId;
+DELEtE FROM  Meta_Job_Unit_Log where Job_Id=@JobId;
+DELEtE FROM  Meta_Job_Log where Job_Id=@JobId;
+delete from Meta_Unit_Stage_Check where Job_Id=@JobId;
+delete from Meta_Unit_Stage_Map where Job_Id=@JobId;
+delete from Meta_Unit_Stage_Task where Job_Id=@JobId;
+delete from Meta_Unit_Load_Map where Job_Id=@JobId;
+delete from Meta_Unit_Load_Task where Job_Id=@JobId;
+delete from Meta_Unit_Conversion_Map where Job_Id=@JobId;
+delete from Meta_Unit_Conversion_Task where Job_Id=@JobId;
+delete from Meta_Job_Unit where Job_Id=@JobId;
+delete from Meta_Job where Job_Id=@JobId;
+
+insert into Meta_Table_List
+  select 
+  (select max(Table_Id)+1  FROM Meta_Table_List)Table_Id
+      , 1 Environment_Type_Id
+      ,'mda_vizientdb_raw',@htable  Table_Name 
+      ,@FlRcTpKy File_Rec_Type_Key
+         where not exists (select 1 from  Meta_Table_List
+         where Table_Prefix='mda_vizientdb_raw'
+          and lower(Table_Name) =lower(@htable))
+
+          insert into Meta_Table_List
+  select 
+  (select max(Table_Id)+1  FROM Meta_Table_List)Table_Id
+      , 3 Environment_Type_Id,'dbo'
+      ,replace(@otable,'','')  Table_Name 
+      ,null File_Rec_Type_Key
+         where not exists (select 1 from  Meta_Table_List
+         where Table_Prefix='dbo' and lower(Table_Name) =lower(replace(@otable,'','')));
+
+
+insert into  Meta_Job 
+values(@JobId,'Hive to ODS transform of'+ @htable,1,null,@FlRcTpKy);
+
+insert into Meta_Job_Unit 
+(Job_Id,Unit_Id,Unit_Type_Id,Unit_Desc,Unit_Active_Flag,Unit_Order)
+values (@JobId,1,21,'Stage from Hive',1,1),
+(@JobId,2,1,'Conversion',1,2),
+(@JobId,3,23,'Load to SQL server ODS',1,3);
+
+
+insert into Meta_Unit_Stage_Task
+SELECT @JobId Job_Id,
+  1 Unit_Id,
+  1 Task_Id,
+  'mda_vizientdb_raw.'+@htable Source_Table_Name,
+  NULL Source_Filter,
+  'Stage_'+@htable     Stage_Table_Name,
+  1    Active_Flag   ,
+  1 Task_Order       ,
+  NULL Update_Track_Field_Name,
+  NULL Update_Track_Field_Type,
+  NULL Partition_Field_Name,
+  NULL Source_Cdc_Table_Name,
+  (select Table_Id from  Meta_Table_List
+         where Table_Name =@htable and Table_Prefix='mda_vizientdb_raw')      Source_Table_Id      ,
+  NULL Stage_Table_Id
+
+
+
+insert into Meta_Unit_Stage_Map
+  SELECT @JobId Job_Id,
+  1 Unit_Id,
+  1 Task_Id,
+  Data_Field Source_Column_Name ,
+  Field_Seq Column_Order,
+  Data_Field Stage_Column_Name,
+  0 Xform_Type_Id,
+  case when lower(Data_Type)='text' or lower(Data_Type)='string' or lower(Data_Type) like '%char%' then 11 
+              when lower(Data_Type) like '%date%' then 12 
+              when lower(Data_Type)='int' then 1 
+              end  Column_Type_Id  ,
+              NULL Column_Expression,
+              1 Column_Active_Flag,
+              '*'    Column_Format,
+              1 Min_Length,
+              255 Max_Length,
+               Key_IND,
+              null   Min_Value,
+              null   Max_Value,
+                       null Column_Identifier
+
+  FROM Meta_Rec_Layout
+  where  File_Rec_Type_Key=@FlRcTpKy
+
+select @ColNum =coalesce(max(Column_Order) ,0)
+from Meta_Unit_Stage_Map
+where Job_Id=@JobId 
+
+insert into Meta_Unit_Stage_Map
+select @JobId,1,1,'etl_job_id',@ColNum+1,'Etl_Job_Id',5,1,'',1,'*',1,255,0,NULL,NULL,null
+union  select @JobId,1,1,'etl_job_dt',@ColNum+2,'Etl_Job_Dt',5,12,'CURRENT_TIMESTAMP',1,'yyyy-MM-dd',1,255,0,NULL,NULL,null
+union  select @JobId,1,1,'active_ind',@ColNum+3,'Active_Ind',1,1,'1',1,'*',1,255,0,NULL,NULL,null
+
+
+  insert into Meta_Unit_Load_Task
+  select @JobId   Job_Id
+      ,3 Unit_Id
+      ,1 Task_Id
+      ,'Stage_'+@htable Stage_Table_Name
+      ,@otable Target_Table_Name
+      ,null Target_Filter
+      ,0 Delete_Ind
+      ,1000 Batch_Max_Size
+      ,1 Active_Flag
+      ,1 Task_Order
+      ,(select Table_Id from  Meta_Table_List
+         where lower(Table_Name) =replace(@otable,'','')and Environment_Type_Id=3) Target_Table_Id
+      ,1 load_Mode,
+         null Table_Type
+
+insert into Meta_Unit_Load_Map
+         select  @JobId   Job_Id
+      ,3 Unit_Id
+      ,1 Task_Id,
+       case when  lower(COLUMN_NAME)  in( 'etl_upd_job_id','etl_ins_job_id') then 'etl_job_id'
+       when  lower(COLUMN_NAME)  in('etl_ins_dt','etl_upd_dt') then 'etl_job_dt' 
+        when  lower(COLUMN_NAME)  in('active_ind') then 'active_ind' 
+        else  coalesce(  (select Stage_Column_Name 
+              from  Meta_Unit_Stage_Map sm
+       where   Job_Id=@JobId 
+          and REPLACE(lower(COLUMN_NAME),'_','')=REPLACE(lower(Stage_Column_Name),'_','')
+          ) , '')
+       end Target_Column_Name,
+       COLUMN_NAME Target_Column_Name,
+       ORDINAL_POSITION Column_Order,
+       CASE WHEN DATA_TYPE LIKE '%char%' then 11
+when DATA_TYPE LIKE '%bigint%' then 2
+when DATA_TYPE LIKE '%double%' then 3
+when DATA_TYPE LIKE '%int%' then 1
+when DATA_TYPE LIKE '%date%' then 12 end Column_Type_Id,
+case when (SELECT 1 
+            FROM ENABLE_ODS.INFORMATION_SCHEMA.TABLE_CONSTRAINTS AS tc
+            INNER JOIN ENABLE_ODS.INFORMATION_SCHEMA.KEY_COLUMN_USAGE AS ku
+                ON tc.CONSTRAINT_TYPE = 'PRIMARY KEY' 
+                AND tc.CONSTRAINT_NAME = ku.CONSTRAINT_NAME
+                     where   ku.TABLE_CATALOG=c.TABLE_CATALOG  AND 
+                      ku.TABLE_SCHEMA=c.TABLE_SCHEMA
+            AND  ku.TABLE_NAME =c.TABLE_NAME
+            AND  ku.COLUMN_NAME=c.COLUMN_NAME
+                           )=1 then 1 
+                           when lower(COLUMN_NAME) like 'etl_ins%' then 9
+                           else 0 end
+                           Key_Ind,
+       1 Active_Flag,
+       null Dq_Filter from ENABLE_ODS.INFORMATION_SCHEMA.COLUMNS c
+         where TABLE_SCHEMA='dbo' and 
+         lower(TABLE_NAME)=replace(LOWER(@otable),'','') ;
+
+         update  Meta_Unit_Load_Map
+         set Active_Flag=0
+         where  Job_Id=@JobId  and Source_Column_Name='';
+
+insert into Meta_Client_Job values(@JobId,1,1,0,1,777,NULL);

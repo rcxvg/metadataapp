@@ -1,0 +1,98 @@
+declare @jobid int=?
+
+delete from Meta_Unit_Stage_Map where Job_id=@jobid
+and Column_Order not in (select column_order from Meta_Job_Template where Job_Id=@jobid);
+
+MERGE Meta_Unit_Stage_Map M
+USING (SELECT distinct [Job_Id]
+      ,[version]
+      ,[Column_Order]
+      ,[Source_Column_Name]
+      ,[Column_Type_Desc]
+      ,[Xform_Type_Desc]
+      ,[Column_Expression]
+      ,[Column_Format]
+      ,[Active_Flag]
+      ,[Min_Length]
+      ,[Max_Length]
+      ,[Min_Value]
+      ,[Max_Value]
+      ,[Column_Identifier]
+  FROM Meta_Job_Template where job_id=@jobid)P
+ON M.[Job_Id]=P.[Job_Id] and M.[Column_Order]=P.[Column_Order]
+WHEN MATCHED THEN 
+UPDATE 
+SET M.[Source_Column_Name]=P.[Source_Column_Name],
+M.[Stage_Column_Name]=P.[Source_Column_Name],
+M.[Xform_Type_Id]=
+(SELECT [Xform_Type_Id] FROM Ref_Xform_Type X where X.[Xform_Type_Desc]=P.[Xform_Type_Desc]) ,
+M.[Column_Expression]=P.[Column_Expression],
+M.[Column_Active_Flag]=P.[Active_Flag],
+M.[Column_Format]=P.[Column_Format],
+M.[Min_Length]=P.[Min_Length],
+M.[Max_Length]=P.[Max_Length],
+M.[Min_Value]=P.[Min_Value],
+M.[Max_Value]=P.[Max_Value],
+M.[Column_Identifier]=P.[Column_Identifier]
+WHEN NOT  MATCHED  BY TARGET THEN
+  INSERT ([Job_Id]
+           ,[Unit_Id]
+           ,[Task_Id]
+           ,[Source_Column_Name]
+           ,[Column_Order]
+           ,[Stage_Column_Name]
+           ,[Xform_Type_Id]
+           ,[Column_Type_Id]
+           ,[Column_Expression]
+           ,[Column_Active_Flag]
+           ,[Column_Format]
+           ,[Min_Length]
+           ,[Max_Length]
+           ,[Key_IND]
+           ,[Min_Value]
+           ,[Max_Value]
+           ,[Column_Identifier])
+  VALUES 
+  (P.[Job_Id],1,1,P.[Source_Column_Name]
+         ,P.[Column_Order]
+         ,P.[Source_Column_Name]
+      ,(SELECT [Xform_Type_Id] FROM Ref_Xform_Type X WHERE X.[Xform_Type_Desc]=P.[Xform_Type_Desc]) 
+      ,(SELECT [Column_Type_Id] FROM Ref_Column_Type X WHERE X.[Column_Type_Desc]=P.[Column_Type_Desc]) 
+         ,P.[Column_Expression]
+         ,P.[Active_Flag]
+      ,P.[Column_Format]
+      ,P.[Min_Length]
+      ,P.[Max_Length]
+         ,0
+      ,P.[Min_Value]
+      ,P.[Max_Value]
+      ,P.[Column_Identifier]);
+      
+update Meta_Unit_Load_Map set [Active_Flag]=0 where Job_id=@jobid and Task_Id=1
+and lower(Target_Column_Name) not in (
+select lower(Target_Column_Name) from Meta_Job_Template where Job_Id=@jobid );
+
+MERGE Meta_Unit_Load_Map M
+USING (SELECT distinct [Job_Id],
+[Source_Column_Name]
+      ,[Column_Order]
+      ,[Target_Column_Name]
+      ,[Column_Type_Desc]
+      ,[Xform_Type_Desc]
+      ,[Column_Expression]
+      ,[Column_Format]
+      ,[Active_Flag]
+      ,[Min_Length]
+      ,[Max_Length]
+      ,[Min_Value]
+      ,[Max_Value]
+      ,[Column_Identifier]
+  FROM Meta_Job_Template
+where job_id=@jobid )P
+ON M.[Job_Id]=P.[Job_Id] and lower(M.Target_Column_Name)=lower(P.Target_Column_Name)
+WHEN MATCHED THEN 
+UPDATE 
+SET M.[Source_Column_Name]=P.[Source_Column_Name],
+M.[Target_Column_Name]=p.[Target_Column_Name],
+M.active_Flag=1;
+

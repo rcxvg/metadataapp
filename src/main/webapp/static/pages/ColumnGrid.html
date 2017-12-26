@@ -1,0 +1,75 @@
+<div ng-controller="JobController" ng-init="getColumnDefs()" class="scrollStyle">
+
+<table class="table table-striped table-bordered">
+			<thead>
+				<tr>
+				    <th>Column Order</th>
+					<th>Source Column Name</th>
+					<th>Column Type Desc</th>
+					<th>Xform Type Desc</th>
+					<th>Column Expression</th>
+					<th>Column Format</th>
+					<!-- <th>Validation Type</th> -->
+					<th>Target Column Name</th>
+					<th>Active Flag</th>
+					<th>Min Length</th>
+					<th>Max Length</th>
+					<th>Min Value</th>
+					<th>Max Value</th>
+					<th>Col Identifier</th>
+
+				</tr>
+			</thead>
+			<tbody>
+			<!-- dir-paginate="column in columnDefs | filter:q | itemsPerPage: pageSize"
+					current-page="currentPage" -->
+				<tr ng-repeat="column in columnDefs">
+					<td>{{column.columnOrder}}</td>
+					<td><span ng-show="!column.newOne">{{column.sourceColumnName}}</span>
+					<span><input type="text" ng-required="true" ng-min="1" ng-model="column.sourceColumnName" ng-show="column.newOne"></span>
+					</td>
+					<td><span ng-show="!column.newOne">{{column.columnTypeDesc}}</span>
+					<span><input type="text" ng-model="column.columnTypeDesc" ng-show="column.newOne"></span></td>
+					<td><input type="text" ng-model="column.xFormTypeDesc">
+					<!-- <select 
+									style="font-size: 16px; font-weight: bold; border: 3px solid #ddd; font-family: 'Roboto', sans-serif; padding: 10px 10px; font-weight: 300; width: 200px; line-height: 50px; color: #888;"
+									ng-model="column.xFormTypeDesc"
+									ng-options="list.xFormTypeDesc as list.xFormTypeDesc for list in selectedXFormTypes">
+									<option value="" ng-if="false"></option>
+						    </select> --></td>
+					<td><input type="text" ng-model="column.columnExpression" ng-disabled="isPassthrough(column.xFormTypeDesc)"></td>
+					<td><input type="text" ng-model="column.columnFormat"></td>
+					
+					<!-- <td><div ng-dropdown-multiselect="" options="column.validationTypeMap" selected-model="column.validationType"></div></td> -->
+					<td>
+					<select 
+									style="font-size: 16px; font-weight: bold; border: 3px solid #ddd; font-family: 'Roboto', sans-serif; padding: 10px 10px; font-weight: 300; width: 200px; line-height: 50px; color: #888;"
+									ng-model="column.targetColumnName"
+									ng-options="list.targetColumnName as list.targetColumnName for list in targetColumnNames">
+									<option value="" >-None-</option>
+						    </select></td>
+					<td><select 
+									style="font-size: 16px; font-weight: bold; border: 3px solid #ddd; font-family: 'Roboto', sans-serif; padding: 10px 10px; font-weight: 300; width: 150px; line-height: 50px; color: #888;"
+									ng-model="column.activeFlag"
+									ng-options="list.id as list.id for list in column.activeFlagLst">
+									<option value="">-None-</option>
+						    </select></td>
+					<td><span ng-show="!column.newOne">{{column.minLength}}</span>
+					<span><input type="text" ng-model="column.minLength" ng-show="column.newOne"></span></td>
+					<td><span ng-show="!column.newOne">{{column.maxLength}}</span>
+					<span><input type="text" ng-model="column.maxLength" ng-show="column.newOne"></span></td>
+					<td><span ng-show="!column.newOne">{{column.minValue}}</span>
+					<span><input type="text" ng-model="column.minValue" ng-show="column.newOne"></span></td>
+					<td><span ng-show="!column.newOne">{{column.maxValue}}</span>
+					<span><input type="text" ng-model="column.maxValue" ng-show="column.newOne"></span></td>
+					<td><span ng-show="!column.newOne">{{column.columnIdentifier}}</span>
+					<span><input type="text" ng-model="column.columnIdentifier" ng-show="column.newOne"></span></td>
+				</tr>
+			</tbody>
+		</table>
+		
+		<button type="submit" class="btn" ng-click="submitJobTemplateDetails()">Submit</button>
+		<button  class="btn" ng-click="addNewRow()">Add</button>
+
+
+</div>
